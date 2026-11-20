@@ -1,32 +1,37 @@
-# NewsCheckr 🛡️
+# NewsCheckr — Fake News Detection Web Application
 
-**NewsCheckr** is a simple, easy-to-use web application that helps users check whether an English news headline, article, or forwarded message is **Likely Real**, **Likely Fake**, **Likely Misleading**, or **Likely Unverified**.
+[![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://fake-news-detection-ml-epmzkr3j9hv2jmoeuj46th.streamlit.app/)
 
-You do not need any technical or Machine Learning knowledge to use it—just paste a news headline and message, select where you saw it, and click **Check News**.
+**Live Demo:** [https://fake-news-detection-ml-epmzkr3j9hv2jmoeuj46th.streamlit.app/](https://fake-news-detection-ml-epmzkr3j9hv2jmoeuj46th.streamlit.app/)
 
----
+## Overview
 
-## ✨ What NewsCheckr Does
+**NewsCheckr** is a web application built with Python, Streamlit, and scikit-learn that evaluates news headlines, article/message text, and source/platform context to classify claims as _Likely Real_, _Likely Fake_, _Likely Misleading_, or _Likely Unverified_. It combines a trained machine learning classifier with rule-based checks for urgency phrases, known hoax patterns, and source/platform context, while providing a confidence score, red-flag explanations, trusted verification search links, and check history.
 
-- **Check News Claims:** Enter a news headline, full text, optional source, and platform (WhatsApp, Facebook, X / Twitter, News site, or Other) to evaluate credibility.
-- **Clear Verdict & Confidence Score:** Displays an easy-to-read badge (`Likely Real`, `Likely Fake`, `Likely Misleading`, or `Likely Unverified`) along with a confidence percentage and explanation.
-- **Red Flag Detection:** Highlights common warning signs such as urgency/forwarding phrases, known hoax patterns, or missing source attribution.
-- **Trusted Fact-Check Links:** Provides one-click search links to verify the claim on trusted fact-checking and news websites (such as PIB Fact Check, BOOM, Alt News, and major news outlets).
-- **Account & Check History:** Lets users create an account, log in, and view their previously checked news items.
+## Key Features
 
----
+- **Multi-Page Interface (`Home`, `Check News`, `History`, `Account`):** Clean navigation with custom orange-and-white styling and aligned action controls.
+- **Structured Claim Input:** Dedicated inputs for headline, main text, optional claimed source, and platform selection (`WhatsApp`, `Facebook`, `X / Twitter`, `News site`, `Other`).
+- **Two-Step Hybrid Evaluation:**
+  1. Cleans and vectorizes text (`vectorizer.joblib`) to obtain a prediction from the trained `scikit-learn` model (`model.joblib`).
+  2. Applies rule-based checks for urgency/forward phrasing, known hoax patterns, and missing or unverified source details to compute the final verdict and confidence percentage.
+- **Verification Links:** Generates direct Google search links targeting fact-checking and news domains (such as PIB Fact Check, BOOM, Alt News, and news outlets) for further manual verification.
+- **Account & History Tracking:** Supports user sign-up/login (with SHA-256 password hashing) and logs past checks with summary counts.
 
-## 🗂️ Project Structure
+## Dataset & Model Notes
+
+- Trained and evaluated using the **WELFake** dataset (from Zenodo, 72,134 raw articles; ~63,700 cleaned rows after removing missing and duplicate records), using TF-IDF vectorization and a `scikit-learn` classifier (`Logistic Regression`).
+
+## Project Structure
 
 ```text
 fake_news_detector/
-├── app.py                  # Main Streamlit web application & navigation
-├── ui_pages.py             # User interface pages (Home, Check News, History, Account)
-├── ml_engine.py            # Prediction logic, text signal checks & verification links
-├── storage_helper.py       # Local JSON storage for user accounts and check history
-├── fake_news_detection.py  # Model training and evaluation script
-├── model.joblib            # Trained classification model
-├── vectorizer.joblib       # Saved TF-IDF text vectorizer
+├── app.py                  # Streamlit entry point, navigation, and session state
+├── ml_engine.py            # Text cleaning, model loading, risk/hoax scoring, and verdicts
+├── ui_pages.py             # Custom CSS styling and page rendering functions
+├── storage_helper.py       # JSON persistence and password hashing helpers
+├── model.joblib            # Trained scikit-learn classification model
+├── vectorizer.joblib       # Fitted TF-IDF vectorizer
 ├── requirements.txt        # Python dependencies
 └── README.md               # Project documentation
 ```
