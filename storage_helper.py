@@ -3,8 +3,8 @@ import json
 from datetime import datetime
 from pathlib import Path
 
-USERS_FILE = Path("users_account.json")
-HISTORY_FILE = Path("history_log.json")
+USERS_FILE = Path("newscheckr_users.json")
+HISTORY_FILE = Path("newscheckr_history.json")
 
 
 def hash_password(password: str) -> str:
@@ -58,6 +58,7 @@ def authenticate_user(users: list[dict], email: str, password: str) -> dict | No
 
 def add_history_entry(history: list[dict], user: dict | None, text: str, source: str, platform: str, verdict_data: dict) -> list[dict]:
     entry = {
+        "app": "newscheckr",
         "user_email": user["email"] if user else "guest",
         "verdict": verdict_data["verdict"],
         "cls": verdict_data["cls"],

@@ -1,0 +1,37 @@
+[
+  {
+    "user_email": "guest",
+    "verdict": "Likely Misleading",
+    "cls": "Misleading",
+    "confidence": 59.6,
+    "fake_prob": 59.6,
+    "timestamp": "11/20/2026, 01:51:23 PM",
+    "text": "Delhi Government Announces Free Metro Travel for Students on Weekends. New Delhi, November 20, 2026:\n\nThe Delhi Government has reportedly announced a proposed initiative offering free metro travel to college and university students across t",
+    "source": "Unspecified",
+    "platform": "Facebook"
+  },
+  {
+    "status": "Unverified",
+    "confidence": 50.19,
+    "timestamp": "11/20/2026, 11:29:41 AM",
+    "text": "free delhi metro for all students on weekdays. delhi mtro anounces free metro for students",
+    "source": "Unspecified",
+    "platform": "WhatsApp"
+  },
+  {
+    "status": "Unverified",
+    "confidence": 50.19,
+    "timestamp": "11/20/2026, 11:29:40 AM",
+    "text": "free delhi metro for all students on weekdays. delhi mtro anounces free metro for students",
+    "source": "Unspecified",
+    "platform": "WhatsApp"
+  },
+  {
+    "status": "Unverified",
+    "confidence": 50.19,
+    "timestamp": "11/20/2026, 11:29:38 AM",
+    "text": "free delhi metro for all students on weekdays. delhi mtro anounces free metro for students",
+    "source": "Unspecified",
+    "platform": "WhatsApp"
+  }
+]

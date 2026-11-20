@@ -1,15 +1,8 @@
 import streamlit as st
-from PIL import Image
 from ml_engine import evaluate_news_claim
 from storage_helper import add_history_entry, authenticate_user, create_account
 
-try:
-    import pytesseract
-    HAS_TESSERACT = True
-except Exception:
-    HAS_TESSERACT = False
-
-ORANGE_CSS = """
+NEWSCHECKR_CSS = """
 <style>
     .stApp {
         background-color: #FFFFFF;
@@ -22,9 +15,7 @@ ORANGE_CSS = """
 
     [data-testid="stWidgetLabel"],
     [data-testid="stWidgetLabel"] p,
-    [data-testid="stWidgetLabel"] label,
-    .stRadio div[role="radiogroup"] label,
-    .stRadio div[role="radiogroup"] p {
+    [data-testid="stWidgetLabel"] label {
         color: #1F1A17 !important;
         opacity: 1 !important;
     }
@@ -46,51 +37,71 @@ ORANGE_CSS = """
     .stTextInput input, .stTextArea textarea {
         background-color: #FFFFFF !important;
         color: #1F1A17 !important;
-        border: 1.5px solid rgba(249,115,22,0.35) !important;
-        border-radius: 12px !important;
+        border: 1.5px solid rgba(249,115,22,0.4) !important;
+        border-radius: 10px !important;
+        padding: 10px 14px !important;
+    }
+    .stTextInput input::placeholder, .stTextArea textarea::placeholder {
+        color: #6B7280 !important;
+        opacity: 1 !important;
+    }
+    .stTextInput input:focus, .stTextArea textarea:focus {
+        border-color: #16A34A !important;
+        box-shadow: 0 0 0 3px rgba(22,163,74,0.15) !important;
     }
 
+    /* Circular/pill buttons by default */
     div.stButton > button {
-        background-color: #FFFFFF;
-        color: #1F1A17;
-        border: 1.5px solid rgba(249,115,22,0.35);
+        background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
+        color: #9A3412;
+        border: 1.5px solid #FDBA74;
         border-radius: 999px;
-        font-weight: 600;
-        padding: 0.45rem 1.15rem;
+        font-weight: 700;
+        padding: 0.48rem 1.2rem;
         white-space: nowrap;
+        transition: all 0.15s ease;
     }
     div.stButton > button:hover {
+        background: linear-gradient(135deg, #FFEDD5 0%, #FED7AA 100%);
         border-color: #EA580C;
-        color: #EA580C;
-        background-color: #FFF3E8;
+        color: #7C2D12;
     }
 
-    .orange-primary div.stButton > button {
-        background: linear-gradient(135deg, #F97316 0%, #EA580C 100%);
+    /* Rectangular green buttons for Check News & Clear */
+    .st-key-check_news_action button,
+    .st-key-clear_news_action button {
+        background: linear-gradient(135deg, #16A34A 0%, #15803D 100%) !important;
         color: #FFFFFF !important;
-        border: none;
-        font-weight: 700;
-        padding: 0.5rem 1.35rem;
+        border: 1.5px solid #15803D !important;
+        border-radius: 10px !important;
+        font-weight: 700 !important;
+        padding: 0.55rem 1.4rem !important;
+        white-space: nowrap !important;
+        box-shadow: 0 4px 12px rgba(22, 163, 74, 0.22) !important;
     }
-    .orange-primary div.stButton > button:hover {
-        background: linear-gradient(135deg, #EA580C 0%, #C2410C 100%);
+    .st-key-check_news_action button:hover,
+    .st-key-clear_news_action button:hover {
+        background: linear-gradient(135deg, #15803D 0%, #166534 100%) !important;
+        border-color: #166534 !important;
         color: #FFFFFF !important;
     }
 
     .brand-mark {
-        font-size: 1.5rem;
+        font-size: 1.55rem;
         font-weight: 800;
         color: #1F1A17;
         padding-top: 6px;
     }
-    .brand-mark span { color: #F97316; }
+    .brand-mark span:first-child { color: #1F1A17; }
+    .brand-mark span:last-child { color: #F97316; }
 
     .glass-box {
-        background: rgba(255, 255, 255, 0.88);
+        background: rgba(255, 255, 255, 0.9);
         border: 1px solid rgba(249, 115, 22, 0.22);
         border-radius: 18px;
         padding: 22px;
         box-shadow: 0 8px 24px rgba(31, 26, 23, 0.05);
+        height: 100%;
     }
 
     .hero-h1 {
@@ -149,22 +160,20 @@ def render_home_page():
         <div class="glass-box" style="padding:28px;">
             <div class="hero-h1">Stop fake news <span>before it spreads</span></div>
             <p style="font-size:1.05rem; color:#6B5F55; max-width:740px; margin-bottom:0;">
-                Type, paste, or upload a screenshot of any news claim in English or Hindi to check its verdict,
-                confidence score, red flags, and history.
+                Type or paste any news headline and article text in English to evaluate its verdict,
+                confidence score, red flags, and history with NewsCheckr.
             </p>
         </div>
         """,
         unsafe_allow_html=True,
     )
     st.write("")
-    st.markdown('<div class="orange-primary">', unsafe_allow_html=True)
     if st.button("Start checking", key="home_start_btn"):
         st.session_state.page = "Check News"
         st.rerun()
-    st.markdown("</div>", unsafe_allow_html=True)
 
     st.write("")
-    c1, c2, c3 = st.columns(3)
+    _, c1, c2, _ = st.columns([0.5, 2.5, 2.5, 0.5], gap="large")
     with c1:
         st.markdown(
             '<div class="glass-box"><div class="box-title" style="margin-top:0;">News Claim Check</div><div class="box-desc" style="margin-bottom:0;">Enter headline, main text, source, and platform to evaluate authenticity.</div></div>',
@@ -172,58 +181,41 @@ def render_home_page():
         )
     with c2:
         st.markdown(
-            '<div class="glass-box"><div class="box-title" style="margin-top:0;">Photo / Screenshot Upload</div><div class="box-desc" style="margin-bottom:0;">Upload an image file to read text and check the news claim.</div></div>',
-            unsafe_allow_html=True,
-        )
-    with c3:
-        st.markdown(
-            '<div class="glass-box"><div class="box-title" style="margin-top:0;">History</div><div class="box-desc" style="margin-bottom:0;">View all previously checked news items and their verdicts.</div></div>',
+            '<div class="glass-box"><div class="box-title" style="margin-top:0;">History</div><div class="box-desc" style="margin-bottom:0;">View all previously checked news items, verdicts, and confidence scores.</div></div>',
             unsafe_allow_html=True,
         )
 
 
 def render_check_page(model, vectorizer, model_ready: bool):
     st.markdown("## Check a news claim")
-    st.markdown('<div class="glass-box">', unsafe_allow_html=True)
 
-    st.markdown('<div class="box-title" style="margin-top:0;">Input Mode</div>', unsafe_allow_html=True)
-    st.markdown('<div class="box-desc">Choose "Type or paste" to enter text, or "Upload image" to upload a photo/screenshot.</div>', unsafe_allow_html=True)
-    mode = st.radio("Input Mode", ["Type or paste", "Upload image"], horizontal=True, label_visibility="collapsed", key="mode_radio")
-
-    if mode == "Upload image":
-        st.markdown('<div class="box-title">Upload News Photo / Screenshot</div>', unsafe_allow_html=True)
-        st.markdown('<div class="box-desc">Upload PNG, JPG, JPEG, or WEBP to extract text from the screenshot.</div>', unsafe_allow_html=True)
-        up_img = st.file_uploader("Upload image", type=["png", "jpg", "jpeg", "webp"], label_visibility="collapsed", key="news_img_file")
-        if up_img is not None:
-            pil_img = Image.open(up_img)
-            st.image(pil_img, width=400)
-            if HAS_TESSERACT:
-                try:
-                    extracted = pytesseract.image_to_string(pil_img).strip()
-                    if extracted:
-                        st.info(f"Extracted text: {extracted}")
-                        if st.button("Copy text to Main text", key="use_ocr_text"):
-                            st.session_state.hl_box = extracted.splitlines()[0][:250]
-                            st.session_state.body_box = extracted
-                            st.rerun()
-                    else:
-                        st.warning("No readable text found in image. Type or paste text below.")
-                except Exception:
-                    st.warning("OCR binary not installed on this machine. Type or paste the image text into Main text below.")
-            else:
-                st.warning("pytesseract not installed in this environment. Type or paste the image text into Main text below.")
-
-    st.markdown('<div class="box-title">Headline</div>', unsafe_allow_html=True)
-    st.markdown('<div class="box-desc">Enter the news headline so the checker knows the main claim being made.</div>', unsafe_allow_html=True)
-    st.text_input("Headline", key="hl_box", label_visibility="collapsed", placeholder="e.g. Government announces free ₹5000 for all citizens")
+    st.markdown('<div class="box-title" style="margin-top:4px;">Headline</div>', unsafe_allow_html=True)
+    st.markdown('<div class="box-desc">Enter the news headline so NewsCheckr knows the main claim being made.</div>', unsafe_allow_html=True)
+    st.text_input(
+        "Headline",
+        key="hl_box",
+        label_visibility="collapsed",
+        placeholder="e.g. Government announces free ₹5000 for all citizens",
+    )
 
     st.markdown('<div class="box-title">Main text</div>', unsafe_allow_html=True)
     st.markdown('<div class="box-desc">Paste the article or forwarded message—this is analyzed by the ML model and text checks.</div>', unsafe_allow_html=True)
-    st.text_area("Main text", key="body_box", height=130, label_visibility="collapsed", placeholder="Paste the full message or article here...")
+    st.text_area(
+        "Main text",
+        key="body_box",
+        height=130,
+        label_visibility="collapsed",
+        placeholder="Paste the full message or article here...",
+    )
 
     st.markdown('<div class="box-title">Claimed source (optional)</div>', unsafe_allow_html=True)
     st.markdown('<div class="box-desc">Enter the claimed publisher or sender—missing sources affect verification reliability.</div>', unsafe_allow_html=True)
-    st.text_input("Claimed source", key="src_box", label_visibility="collapsed", placeholder="e.g. Times of India, WhatsApp group, news website")
+    st.text_input(
+        "Claimed source",
+        key="src_box",
+        label_visibility="collapsed",
+        placeholder="e.g. Times of India, WhatsApp group, news website",
+    )
 
     st.markdown('<div class="box-title">Where did you see it?</div>', unsafe_allow_html=True)
     st.markdown('<div class="box-desc">Select the platform where you saw this news.</div>', unsafe_allow_html=True)
@@ -236,12 +228,9 @@ def render_check_page(model, vectorizer, model_ready: bool):
                 st.rerun()
 
     st.write("")
-    # Last row: ONLY Check News and Clear aligned together
-    b1, b2, _ = st.columns([1.5, 1.2, 4.3])
+    b1, b2, _ = st.columns([1.4, 1.4, 4.2], gap="small")
     with b1:
-        st.markdown('<div class="orange-primary">', unsafe_allow_html=True)
         run_btn = st.button("Check News", key="check_news_action", use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
     with b2:
         if st.button("Clear", key="clear_news_action", use_container_width=True):
             st.session_state.hl_box = ""
@@ -275,8 +264,6 @@ def render_check_page(model, vectorizer, model_ready: bool):
                 res,
             )
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
     if st.session_state.last_result:
         r = st.session_state.last_result
         st.write("")
@@ -286,7 +273,7 @@ def render_check_page(model, vectorizer, model_ready: bool):
                 <span class="v-badge b-{r['cls']}">{r['verdict']}</span>
                 <strong style="margin-left:8px;">Confidence: {r['confidence']}%</strong>
                 <p style="margin-top:10px; color:#1F1A17;">{r['reason']}</p>
-                <div class="box-desc">Red flags: {', '.join(r['red_flags']) if r['red_flags'] else 'None detected'}</div>
+                <div class="box-desc" style="margin-bottom:0;">Red flags: {', '.join(r['red_flags']) if r['red_flags'] else 'None detected'}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -301,7 +288,6 @@ def render_check_page(model, vectorizer, model_ready: bool):
 
 def render_history_page():
     st.markdown("## History")
-    st.markdown('<div class="glass-box">', unsafe_allow_html=True)
 
     if st.session_state.user:
         rows = [x for x in st.session_state.history if x.get("user_email") == st.session_state.user["email"]]
@@ -334,12 +320,9 @@ def render_history_page():
     else:
         st.info("No checked news items in history yet.")
 
-    st.markdown("</div>", unsafe_allow_html=True)
-
 
 def render_account_page():
     st.markdown("## Account")
-    st.markdown('<div class="glass-box">', unsafe_allow_html=True)
 
     if st.session_state.account_msg:
         st.success(st.session_state.account_msg)
@@ -365,7 +348,6 @@ def render_account_page():
             l_pass = st.text_input("Login Password", type="password", key="acc_l_pass", label_visibility="collapsed", placeholder="Enter password")
 
             st.write("")
-            st.markdown('<div class="orange-primary">', unsafe_allow_html=True)
             if st.button("Log in", key="acc_l_submit"):
                 found = authenticate_user(st.session_state.users, l_email, l_pass)
                 if found:
@@ -374,11 +356,10 @@ def render_account_page():
                     st.rerun()
                 else:
                     st.error("Invalid email or password.")
-            st.markdown("</div>", unsafe_allow_html=True)
 
         with t_create:
             st.markdown('<div class="box-title">Full name</div>', unsafe_allow_html=True)
-            st.markdown('<div class="box-desc">Enter your full name to create your account.</div>', unsafe_allow_html=True)
+            st.markdown('<div class="box-desc">Enter your full name to create your NewsCheckr account.</div>', unsafe_allow_html=True)
             c_name = st.text_input("Full name", key="acc_c_name", label_visibility="collapsed", placeholder="Your name")
 
             st.markdown('<div class="box-title">Email</div>', unsafe_allow_html=True)
@@ -390,7 +371,6 @@ def render_account_page():
             c_pass = st.text_input("Password", type="password", key="acc_c_pass", label_visibility="collapsed", placeholder="At least 4 characters")
 
             st.write("")
-            st.markdown('<div class="orange-primary">', unsafe_allow_html=True)
             if st.button("Create account", key="acc_c_submit"):
                 ok, msg, created_user = create_account(st.session_state.users, c_name, c_email, c_pass)
                 if ok and created_user:
@@ -399,6 +379,3 @@ def render_account_page():
                     st.rerun()
                 else:
                     st.warning(msg)
-            st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("</div>", unsafe_allow_html=True)

@@ -1,18 +1,32 @@
-# Fake News Detection System (ML with AI Internship Project)
+# NewsCheckr 🛡️
 
-An end-to-end NLP and Machine Learning pipeline for classifying news articles as **Fake** or **Real**, complete with exploratory data analysis, model benchmarking, cross-validation, feature explainability, unsupervised clustering exploration, and saved model inference.
+**NewsCheckr** is a simple, easy-to-use web application that helps users check whether an English news headline, article, or forwarded message is **Likely Real**, **Likely Fake**, **Likely Misleading**, or **Likely Unverified**.
 
-## Course Topics Covered
+You do not need any technical or Machine Learning knowledge to use it—just paste a news headline and message, select where you saw it, and click **Check News**.
 
-- **Introduction to ML & Data Fundamentals:** Train-test splitting (`stratify`), deduplication, and supervised vs. unsupervised paradigms.
-- **Python Programming & Data Analytics/Visualization:** `pandas`, `numpy`, `matplotlib`, `seaborn` for cleaning, metrics, and plots (`eda_overview.png`, `confusion_matrix.png`).
-- **Data Analytics using AI Tools:** Assisted in rapid prototyping, metric verification, and edge-case testing.
-- **Supervised Learning (Classification & Probability):** Compared **Logistic Regression** (with probability confidence score), **Multinomial Naive Bayes**, and **LinearSVC** using Stratified K-Fold cross-validation.
-- **Unsupervised Learning (Clustering):** Applied **K-Means** on TF-IDF features to inspect unlabeled text grouping.
+---
 
-## How to Run
+## ✨ What NewsCheckr Does
 
-```bash
-pip install pandas numpy matplotlib seaborn scikit-learn joblib
-python fake_news_detection.py
+- **Check News Claims:** Enter a news headline, full text, optional source, and platform (WhatsApp, Facebook, X / Twitter, News site, or Other) to evaluate credibility.
+- **Clear Verdict & Confidence Score:** Displays an easy-to-read badge (`Likely Real`, `Likely Fake`, `Likely Misleading`, or `Likely Unverified`) along with a confidence percentage and explanation.
+- **Red Flag Detection:** Highlights common warning signs such as urgency/forwarding phrases, known hoax patterns, or missing source attribution.
+- **Trusted Fact-Check Links:** Provides one-click search links to verify the claim on trusted fact-checking and news websites (such as PIB Fact Check, BOOM, Alt News, and major news outlets).
+- **Account & Check History:** Lets users create an account, log in, and view their previously checked news items.
+
+---
+
+## 🗂️ Project Structure
+
+```text
+fake_news_detector/
+├── app.py                  # Main Streamlit web application & navigation
+├── ui_pages.py             # User interface pages (Home, Check News, History, Account)
+├── ml_engine.py            # Prediction logic, text signal checks & verification links
+├── storage_helper.py       # Local JSON storage for user accounts and check history
+├── fake_news_detection.py  # Model training and evaluation script
+├── model.joblib            # Trained classification model
+├── vectorizer.joblib       # Saved TF-IDF text vectorizer
+├── requirements.txt        # Python dependencies
+└── README.md               # Project documentation
 ```

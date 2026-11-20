@@ -17,11 +17,6 @@ PHRASE_PATTERNS = [
     ("urgent", 8),
     ("otp", 10),
     ("click the link", 10),
-    ("शेयर करें", 12),
-    ("सबको भेजें", 12),
-    ("मीडिया नहीं दिखाएगा", 18),
-    ("जरूर शेयर", 12),
-    ("मुफ्त", 8),
 ]
 
 HOAX_TEMPLATES = [
@@ -32,7 +27,7 @@ HOAX_TEMPLATES = [
 ]
 
 SOURCE_KEYWORDS = re.compile(
-    r"according to|said|official|statement|pti|ani|ministry|police|reported|rbi|एजेंसी|मंत्रालय|पुलिस|अनुसार",
+    r"according to|said|official|statement|pti|ani|ministry|police|reported|rbi",
     re.IGNORECASE,
 )
 
@@ -78,11 +73,9 @@ def evaluate_news_claim(headline: str, body: str, source: str, platform: str, mo
         red_flags.append("many exclamation marks")
 
     tokens = set(re.findall(r"[a-z0-9₹]+", lower_t))
-    matched_hoax = None
     for name, keywords in HOAX_TEMPLATES:
         hits = len(tokens.intersection(keywords))
         if hits >= 2 and (hits / len(keywords)) >= 0.5:
-            matched_hoax = name
             risk_score += 20
             red_flags.append(f"hoax pattern: {name}")
             break
@@ -108,19 +101,18 @@ def evaluate_news_claim(headline: str, body: str, source: str, platform: str, mo
     else:
         fake_prob = 0.85 if pred == 1 else 0.15
 
-    # Blend ML probability with signal risk
     blended_fake = min(0.99, max(0.01, 0.7 * fake_prob + 0.3 * (risk_score / 100.0)))
 
     if 0.43 <= blended_fake <= 0.57 or (not has_source and platform in {"WhatsApp", "Facebook", "Other"} and not red_flags):
         verdict = "Likely Unverified"
         cls = "Unverified"
         confidence = round(max(45.0, min(75.0, (1.0 - abs(blended_fake - 0.5) * 2) * 80)), 1)
-        reason = "The claim lacks clear source attribution or sits near the uncertainty threshold, so it should be cross-checked before sharing."
+        reason = "NewsCheckr found limited source attribution or near-threshold signals, so this claim should be verified with trusted sources."
     elif blended_fake >= 0.65:
         verdict = "Likely Fake"
         cls = "Fake"
         confidence = round(min(96.0, max(55.0, blended_fake * 100)), 1)
-        reason = "Model probability and sensational/urgency or hoax indicators suggest this claim is likely false or manipulated."
+        reason = "Model probability and sensational, urgency, or hoax indicators suggest this claim is likely false or manipulated."
     elif blended_fake >= 0.55:
         verdict = "Likely Misleading"
         cls = "Misleading"

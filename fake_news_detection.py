@@ -21,18 +21,21 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 
-# --- 1. DATA LOADING WITH SAFE FALLBACK ---
+# --- 1. DATA LOADING (WELFake) WITH SAFE FALLBACK ---
 def load_news_data():
+    csv_path = os.path.join("data", "WELFake_Dataset.csv")
     try:
-        if os.path.isfile("Fake.csv") and os.path.isfile("True.csv") and os.path.getsize("Fake.csv") > 0 and os.path.getsize("True.csv") > 0:
-            fake_df = pd.read_csv("Fake.csv").sample(n=3000, random_state=42)
-            true_df = pd.read_csv("True.csv").sample(n=3000, random_state=42)
-            fake_df["label"] = 1
-            true_df["label"] = 0
-            combined = pd.concat([fake_df, true_df], ignore_index=True)
-            return combined, "Sampled Fake.csv + True.csv (6000 rows)"
+        if os.path.isfile(csv_path) and os.path.getsize(csv_path) > 0:
+            welfake = pd.read_csv(csv_path)
+            welfake = welfake.dropna(subset=["label"])
+            welfake["label"] = welfake["label"].astype(int)
+
+            # Actual WELFake file mein: 0 = Real, 1 = Fake (is code ke jaisa hi), isliye flip nahi karna
+
+            welfake = welfake[["title", "text", "label"]]
+            return welfake, f"WELFake Dataset ({len(welfake)} rows)"
     except Exception as exc:
-        print(f"CSV load skipped ({exc}) -> using expanded starter dataset.")
+        print(f"WELFake load skipped ({exc}) -> using expanded starter dataset.")
 
     rows = [
         ("Breaking: Secret pill cures all diseases overnight without side effects", "Anonymous insiders claim doctors are hiding this miracle cure.", 1),
@@ -82,7 +85,8 @@ axes[0].set_title("Class Distribution (0 = Real, 1 = Fake)")
 axes[0].set_xlabel("Label")
 axes[0].set_ylabel("Count")
 
-sns.histplot(data=df, x="word_count", hue="label", bins=15, kde=True, ax=axes[1])
+# Bahut lambe articles hata kar graph readable banaya
+sns.histplot(data=df[df["word_count"] < 2000], x="word_count", hue="label", bins=30, kde=True, ax=axes[1])
 axes[1].set_title("Word Count Distribution by Class")
 axes[1].set_xlabel("Word Count")
 
@@ -104,7 +108,8 @@ X_train, X_test, y_train, y_test = train_test_split(
     df["clean_text"], df["label"], test_size=0.25, random_state=42, stratify=df["label"]
 )
 
-tfidf = TfidfVectorizer(max_features=2000, ngram_range=(1, 2), stop_words="english")
+# Bade dataset ke liye features 2000 se badha kar 5000 kiye
+tfidf = TfidfVectorizer(max_features=5000, ngram_range=(1, 2), stop_words="english")
 X_train_vec = tfidf.fit_transform(X_train)
 X_test_vec = tfidf.transform(X_test)
 
@@ -120,6 +125,7 @@ skf = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
 
 summary_rows = []
 for model_name, clf in models.items():
+    print(f"Training {model_name}...")
     clf.fit(X_train_vec, y_train)
     preds = clf.predict(X_test_vec)
     cv_acc = cross_val_score(clf, X_train_vec, y_train, cv=skf, scoring="accuracy")
@@ -168,7 +174,8 @@ print("\nSaved artifacts: model.joblib, vectorizer.joblib, eda_overview.png, con
 
 # --- 7. UNSUPERVISED LEARNING (K-MEANS) ---
 n_clusters = min(3, X_train_vec.shape[0])
-kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
+# n_init=3 rakha hai taaki bade dataset par jaldi chale
+kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=3)
 cluster_ids = kmeans.fit_predict(X_train_vec)
 print("K-Means Cluster Counts:", pd.Series(cluster_ids).value_counts().to_dict())
 
